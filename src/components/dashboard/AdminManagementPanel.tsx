@@ -350,7 +350,7 @@ export default function AdminManagementPanel({ participants, documents, recentPa
       </form>
 
       <section className="rounded-2xl border border-slate-200 bg-white p-4 xl:col-span-2">
-        <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-700">Participants récents</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-700">Participants</h2>
         {recentParticipants.length ? (
           <ul className="mt-3 space-y-2">
             {recentParticipants.map((participant) => (

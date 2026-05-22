@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 
 export default async function AdminDashboardPage() {
   const admin = await requireRole("admin");
-  const [participantCount, documentCount, allParticipants, allDocuments, recentParticipants, recentDocuments] = await Promise.all([
+  const [participantCount, documentCount, allParticipants, allDocuments, participantsWithCounts, recentDocuments] = await Promise.all([
     db.user.count({ where: { role: "participant" } }),
     db.document.count(),
     db.user.findMany({
@@ -16,7 +16,7 @@ export default async function AdminDashboardPage() {
         fullName: true,
         username: true,
       },
-      orderBy: { fullName: "asc" },
+      orderBy: { createdAt: "asc" },
     }),
     db.document.findMany({
       select: {
@@ -42,8 +42,7 @@ export default async function AdminDashboardPage() {
         username: true,
         _count: { select: { participantDocs: true } },
       },
-      orderBy: { fullName: "asc" },
-      take: 8,
+      orderBy: { createdAt: "asc" },
     }),
     db.document.findMany({
       select: {
@@ -102,7 +101,7 @@ export default async function AdminDashboardPage() {
             participantId: document.participantId,
             participantFullName: document.participant.fullName,
           }))}
-          recentParticipants={recentParticipants.map((participant) => ({
+          recentParticipants={participantsWithCounts.map((participant) => ({
             id: participant.id,
             fullName: participant.fullName,
             username: participant.username,
