@@ -6,7 +6,7 @@ import { createSessionToken, SESSION_COOKIE, SESSION_MAX_AGE_SECONDS } from "@/l
 
 const loginSchema = z.object({
   username: z.string().min(2),
-  password: z.string().min(8),
+  password: z.string().min(4),
 });
 
 export async function POST(request: Request) {
