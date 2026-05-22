@@ -25,10 +25,15 @@ export default function LoginForm() {
         }),
       });
 
-      const payload = (await response.json()) as { role?: string; error?: string };
+      let payload: { role?: string; error?: string } | null = null;
+      try {
+        payload = (await response.json()) as { role?: string; error?: string };
+      } catch {
+        payload = null;
+      }
 
-      if (!response.ok || !payload.role) {
-        setError(payload.error ?? "Connexion impossible.");
+      if (!response.ok || !payload?.role) {
+        setError(payload?.error ?? `Connexion impossible (HTTP ${response.status}).`);
         return;
       }
 
