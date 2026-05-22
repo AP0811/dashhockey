@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  participant
+  coach
+  admin
+}
+
+model User {
+  id              String     @id @default(cuid())
+  username        String     @unique
+  email           String     @unique
+  fullName        String
+  passwordHash    String
+  role            Role
+  groupName       String?
+  participantCode String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  participantDocs Document[] @relation("ParticipantDocuments")
+  coachDocs       Document[] @relation("CoachAccess")
+
+  @@index([role])
+  @@index([groupName])
+}
+
+model Document {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  fileName      String
+  storageKey    String
+  updatedAt     DateTime @default(now())
+  participantId String
+  coachId       String?
+
+  participant User  @relation("ParticipantDocuments", fields: [participantId], references: [id], onDelete: Cascade)
+  coach       User? @relation("CoachAccess", fields: [coachId], references: [id], onDelete: SetNull)
+
+  @@index([participantId])
+  @@index([updatedAt])
+}
