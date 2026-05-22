@@ -118,7 +118,6 @@ export default function DocumentList({ documents, emptyMessage }: DocumentListPr
               <h3 className="font-semibold text-slate-900">{document.title}</h3>
               <p className="mt-1 text-sm leading-6 text-slate-600">{document.description ?? "Sans description."}</p>
               <p className="mt-2 text-xs text-slate-500">Fichier: {document.fileName}</p>
-              <p className="mt-1 text-xs text-slate-500">Stockage: {document.storageKey}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"

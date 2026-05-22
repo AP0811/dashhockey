@@ -26,31 +26,19 @@ export default async function ParticipantDashboardPage() {
           Connecté en tant que {participant.fullName} ({participant.username}).
         </p>
 
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Code participant</p>
-            <p className="mt-2 text-lg font-bold text-slate-900">{participant.participantCode ?? "Non attribué"}</p>
-          </article>
-          <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Groupe</p>
-            <p className="mt-2 text-lg font-bold text-slate-900">{participant.groupName ?? "Non attribué"}</p>
-          </article>
+        <div className="mt-6 grid gap-4 sm:grid-cols-1">
           <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
             <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Documents</p>
             <p className="mt-2 text-lg font-bold text-slate-900">{documents.length}</p>
           </article>
         </div>
 
-        <div className="mt-6 rounded-2xl border border-sky-200 bg-sky-50 p-4">
-          <p className="text-sm font-semibold text-sky-900">Confidentialité</p>
-          <p className="mt-1 text-sm leading-6 text-sky-950">
-            Vous voyez uniquement vos propres documents. Le téléchargement sera activé via des liens signés lors de
-            l&apos;intégration du stockage privé.
-          </p>
-        </div>
-
         <div className="mt-6">
           <DocumentList documents={documents} emptyMessage="Aucun document disponible pour ce participant." />
+        </div>
+
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+          <p className="text-xs text-slate-600">Confidentialité: vous voyez uniquement vos propres documents.</p>
         </div>
       </section>
     </main>

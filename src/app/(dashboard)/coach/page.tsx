@@ -36,15 +36,6 @@ export default async function CoachDashboardPage({ searchParams }: CoachDashboar
       })
     : [];
 
-  const teamDocumentCount = await db.document.count({
-    where: {
-      participant: {
-        role: "participant",
-        groupName: coach.groupName ?? undefined,
-      },
-    },
-  });
-
   return (
     <main className="mx-auto w-full max-w-6xl px-6 py-8 sm:px-8 lg:px-10">
       <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_20px_70px_rgba(15,23,42,0.1)] sm:p-8">
@@ -54,24 +45,6 @@ export default async function CoachDashboardPage({ searchParams }: CoachDashboar
             <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">Espace Coach</h1>
           </div>
           <LogoutButton />
-        </div>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-          Connecté en tant que {coach.fullName} ({coach.username}). Groupe: {coach.groupName ?? "N/A"}.
-        </p>
-
-        <div className="mt-6 grid gap-4 sm:grid-cols-3">
-          <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Athlètes du groupe</p>
-            <p className="mt-2 text-lg font-bold text-slate-900">{participants.length}</p>
-          </article>
-          <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Documents du groupe</p>
-            <p className="mt-2 text-lg font-bold text-slate-900">{teamDocumentCount}</p>
-          </article>
-          <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-500">Athlète sélectionné</p>
-            <p className="mt-2 text-lg font-bold text-slate-900">{selectedParticipant?.fullName ?? "Aucun"}</p>
-          </article>
         </div>
 
         <form className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4" method="GET">
@@ -88,11 +61,11 @@ export default async function CoachDashboardPage({ searchParams }: CoachDashboar
               {participants.length ? (
                 participants.map((participant) => (
                   <option key={participant.id} value={participant.id}>
-                    {participant.fullName} • {participant.participantCode ?? "Sans code"}
+                    {participant.fullName}
                   </option>
                 ))
               ) : (
-                <option value="">Aucun athlète dans ce groupe</option>
+                <option value="">Aucun athlète disponible</option>
               )}
             </select>
             <button
@@ -104,20 +77,10 @@ export default async function CoachDashboardPage({ searchParams }: CoachDashboar
           </div>
         </form>
 
-        {selectedParticipant ? (
-          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-            <p className="text-sm font-semibold text-emerald-900">Profil athlète</p>
-            <p className="mt-1 text-sm leading-6 text-emerald-950">
-              {selectedParticipant.fullName} • Code {selectedParticipant.participantCode ?? "N/A"} • Groupe{" "}
-              {selectedParticipant.groupName ?? "N/A"}
-            </p>
-          </div>
-        ) : null}
-
         <div className="mt-6">
           <DocumentList
             documents={documents}
-            emptyMessage="Aucun document pour l'athlète sélectionné ou aucun athlète dans ce groupe."
+            emptyMessage="Aucun document pour l'athlète sélectionné."
           />
         </div>
       </section>
