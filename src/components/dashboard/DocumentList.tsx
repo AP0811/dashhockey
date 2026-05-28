@@ -19,7 +19,7 @@ type DocumentListProps = {
 };
 
 export default function DocumentList({ documents, emptyMessage }: DocumentListProps) {
-  const [openDocumentId, setOpenDocumentId] = useState<string | null>(null);
+  const [openDocumentId, setOpenDocumentId] = useState<string | null>(documents[0]?.id ?? null);
   const [previewPages, setPreviewPages] = useState<string[]>([]);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -116,7 +116,7 @@ export default function DocumentList({ documents, emptyMessage }: DocumentListPr
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="font-semibold text-slate-900">{document.title}</h3>
-              <p className="mt-1 text-sm leading-6 text-slate-600">{document.description ?? "Sans description."}</p>
+              {document.description?.trim() ? <p className="mt-1 text-sm leading-6 text-slate-600">{document.description}</p> : null}
               <p className="mt-2 text-xs text-slate-500">Fichier: {document.fileName}</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
@@ -124,7 +124,7 @@ export default function DocumentList({ documents, emptyMessage }: DocumentListPr
                   onClick={() => setOpenDocumentId((current) => (current === document.id ? null : document.id))}
                   className="inline-flex rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white transition hover:bg-slate-800"
                 >
-                  Voir
+                  {openDocumentId === document.id ? "Masquer" : "Voir"}
                 </button>
                 <a
                   href={`/api/documents/${document.id}/access?disposition=attachment`}

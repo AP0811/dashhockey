@@ -1,6 +1,7 @@
 import RoleBadge from "@/components/ui/RoleBadge";
 import DocumentList from "@/components/dashboard/DocumentList";
 import LogoutButton from "@/components/dashboard/LogoutButton";
+import CoachParticipantSelector from "@/components/dashboard/CoachParticipantSelector";
 import { requireRole } from "@/lib/auth-server";
 import { db } from "@/lib/db";
 
@@ -23,6 +24,11 @@ export default async function CoachDashboardPage({ searchParams }: CoachDashboar
       fullName: true,
       participantCode: true,
       groupName: true,
+      _count: {
+        select: {
+          participantDocs: true,
+        },
+      },
     },
   });
 
@@ -47,38 +53,25 @@ export default async function CoachDashboardPage({ searchParams }: CoachDashboar
           <LogoutButton />
         </div>
 
-        <form className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4" method="GET">
+        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <label className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-700" htmlFor="participantId">
             Choisir un athlète
           </label>
           <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-            <select
-              id="participantId"
-              name="participantId"
-              defaultValue={selectedParticipant?.id ?? ""}
-              className="w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-slate-400"
-            >
-              {participants.length ? (
-                participants.map((participant) => (
-                  <option key={participant.id} value={participant.id}>
-                    {participant.fullName}
-                  </option>
-                ))
-              ) : (
-                <option value="">Aucun athlète disponible</option>
-              )}
-            </select>
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800"
-            >
-              Voir ses documents
-            </button>
+            <CoachParticipantSelector
+              participants={participants.map((participant) => ({
+                id: participant.id,
+                fullName: participant.fullName,
+                documentCount: participant._count.participantDocs,
+              }))}
+              selectedParticipantId={selectedParticipant?.id ?? ""}
+            />
           </div>
-        </form>
+        </div>
 
         <div className="mt-6">
           <DocumentList
+            key={selectedParticipant?.id ?? "no-participant"}
             documents={documents}
             emptyMessage="Aucun document pour l'athlète sélectionné."
           />

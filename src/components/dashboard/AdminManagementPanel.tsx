@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 type ParticipantOption = {
@@ -45,6 +45,7 @@ export default function AdminManagementPanel({ participants, documents, recentPa
     title: "",
     description: "",
   });
+  const [uploadParticipantQuery, setUploadParticipantQuery] = useState("");
 
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [participantMessage, setParticipantMessage] = useState("");
@@ -66,6 +67,33 @@ export default function AdminManagementPanel({ participants, documents, recentPa
   });
   const [editingDocumentFile, setEditingDocumentFile] = useState<File | null>(null);
   const [editingDocumentMessage, setEditingDocumentMessage] = useState("");
+
+  const filteredUploadParticipants = useMemo(() => {
+    const query = uploadParticipantQuery.trim().toLowerCase();
+
+    if (!query) {
+      return participants;
+    }
+
+    return participants.filter((participant) => {
+      const haystack = `${participant.fullName} ${participant.username}`.toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [participants, uploadParticipantQuery]);
+
+  const uploadParticipantOptions = useMemo(() => {
+    const selectedParticipant = participants.find((participant) => participant.id === uploadForm.participantId);
+
+    if (!selectedParticipant) {
+      return filteredUploadParticipants;
+    }
+
+    if (filteredUploadParticipants.some((participant) => participant.id === selectedParticipant.id)) {
+      return filteredUploadParticipants;
+    }
+
+    return [selectedParticipant, ...filteredUploadParticipants];
+  }, [filteredUploadParticipants, participants, uploadForm.participantId]);
 
   const startEditingParticipant = (participantId: string) => {
     const selectedParticipant = participants.find((participant) => participant.id === participantId);
@@ -300,19 +328,33 @@ export default function AdminManagementPanel({ participants, documents, recentPa
       <form onSubmit={uploadDocument} className="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-700">Uploader un document PDF</h2>
         <div className="mt-3 grid gap-3">
+          <input
+            type="search"
+            disabled={!hasParticipants}
+            placeholder="Rechercher un participant (nom ou username)"
+            className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+            value={uploadParticipantQuery}
+            onChange={(event) => setUploadParticipantQuery(event.target.value)}
+          />
           <select
             required
-            disabled={!hasParticipants}
+            disabled={!hasParticipants || !uploadParticipantOptions.length}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
             value={uploadForm.participantId}
             onChange={(event) => setUploadForm((current) => ({ ...current, participantId: event.target.value }))}
           >
             {hasParticipants ? (
-              participants.map((participant) => (
-                <option key={participant.id} value={participant.id}>
-                  {participant.fullName}
+              uploadParticipantOptions.length ? (
+                uploadParticipantOptions.map((participant) => (
+                  <option key={participant.id} value={participant.id}>
+                    {participant.fullName} ({participant.username})
+                  </option>
+                ))
+              ) : (
+                <option value="" disabled>
+                  Aucun participant trouvé pour cette recherche
                 </option>
-              ))
+              )
             ) : (
               <option value="">Aucun participant disponible</option>
             )}
