@@ -7,5 +7,5 @@ export interface ParticipantRepository {
 
 export interface DocumentRepository {
   listByParticipant(participantId: string): Promise<DocumentRecord[]>;
-  createForParticipant(participantId: string, payload: Omit<DocumentRecord, "id" | "participantId">): Promise<DocumentRecord>;
+  createForParticipant(participantId: string | null, payload: Omit<DocumentRecord, "id" | "participantId">): Promise<DocumentRecord>;
 }

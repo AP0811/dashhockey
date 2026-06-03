@@ -14,7 +14,8 @@ type DocumentOption = {
   title: string;
   description: string | null;
   fileName: string;
-  participantId: string;
+  participantId: string | null;
+  audience: "participant" | "coach";
   participantFullName: string;
 };
 
@@ -26,6 +27,7 @@ type Props = {
     id: string;
     title: string;
     updatedAt: Date;
+    audience: "participant" | "coach";
     participantFullName: string;
   }>;
 };
@@ -44,6 +46,7 @@ export default function AdminManagementPanel({ participants, documents, recentPa
     participantId: participants[0]?.id ?? "",
     title: "",
     description: "",
+    coachOnly: false,
   });
   const [uploadParticipantQuery, setUploadParticipantQuery] = useState("");
 
@@ -64,6 +67,7 @@ export default function AdminManagementPanel({ participants, documents, recentPa
     participantId: participants[0]?.id ?? "",
     title: "",
     description: "",
+    coachOnly: false,
   });
   const [editingDocumentFile, setEditingDocumentFile] = useState<File | null>(null);
   const [editingDocumentMessage, setEditingDocumentMessage] = useState("");
@@ -82,6 +86,10 @@ export default function AdminManagementPanel({ participants, documents, recentPa
   }, [participants, uploadParticipantQuery]);
 
   const uploadParticipantOptions = useMemo(() => {
+    if (uploadForm.coachOnly) {
+      return [];
+    }
+
     const selectedParticipant = participants.find((participant) => participant.id === uploadForm.participantId);
 
     if (!selectedParticipant) {
@@ -93,7 +101,7 @@ export default function AdminManagementPanel({ participants, documents, recentPa
     }
 
     return [selectedParticipant, ...filteredUploadParticipants];
-  }, [filteredUploadParticipants, participants, uploadForm.participantId]);
+  }, [filteredUploadParticipants, participants, uploadForm.coachOnly, uploadForm.participantId]);
 
   const startEditingParticipant = (participantId: string) => {
     const selectedParticipant = participants.find((participant) => participant.id === participantId);
@@ -164,9 +172,10 @@ export default function AdminManagementPanel({ participants, documents, recentPa
 
     setEditingDocumentId(documentId);
     setEditingDocumentForm({
-      participantId: selectedDocument.participantId,
+      participantId: selectedDocument.participantId ?? participants[0]?.id ?? "",
       title: selectedDocument.title,
       description: selectedDocument.description ?? "",
+      coachOnly: selectedDocument.audience === "coach",
     });
     setEditingDocumentFile(null);
     setEditingDocumentMessage("");
@@ -183,6 +192,10 @@ export default function AdminManagementPanel({ participants, documents, recentPa
     data.set("participantId", editingDocumentForm.participantId);
     data.set("title", editingDocumentForm.title);
     data.set("description", editingDocumentForm.description);
+    data.set("audience", editingDocumentForm.coachOnly ? "coach" : "participant");
+    if (editingDocumentForm.coachOnly) {
+      data.delete("participantId");
+    }
     if (editingDocumentFile) {
       data.set("file", editingDocumentFile);
     }
@@ -259,7 +272,7 @@ export default function AdminManagementPanel({ participants, documents, recentPa
       return;
     }
 
-    if (!hasParticipants || !uploadForm.participantId) {
+    if (!uploadForm.coachOnly && (!hasParticipants || !uploadForm.participantId)) {
       setUploadMessage("Créez d'abord un participant.");
       return;
     }
@@ -268,6 +281,10 @@ export default function AdminManagementPanel({ participants, documents, recentPa
     data.set("participantId", uploadForm.participantId);
     data.set("title", uploadForm.title);
     data.set("description", uploadForm.description);
+    data.set("audience", uploadForm.coachOnly ? "coach" : "participant");
+    if (uploadForm.coachOnly) {
+      data.delete("participantId");
+    }
     data.set("file", uploadFile);
 
     const response = await fetch("/api/admin/documents", {
@@ -328,22 +345,39 @@ export default function AdminManagementPanel({ participants, documents, recentPa
       <form onSubmit={uploadDocument} className="rounded-2xl border border-slate-200 bg-white p-4">
         <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-700">Uploader un document PDF</h2>
         <div className="mt-3 grid gap-3">
+          <label className="flex items-center gap-3 rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-slate-300"
+              checked={uploadForm.coachOnly}
+              onChange={(event) =>
+                setUploadForm((current) => ({
+                  ...current,
+                  coachOnly: event.target.checked,
+                  participantId: event.target.checked ? "" : current.participantId || (participants[0]?.id ?? ""),
+                }))
+              }
+            />
+            <span>Réserver ce document aux coachs</span>
+          </label>
           <input
             type="search"
-            disabled={!hasParticipants}
-            placeholder="Rechercher un participant (nom ou username)"
+            disabled={!hasParticipants || uploadForm.coachOnly}
+            placeholder={uploadForm.coachOnly ? "Aucun participant requis" : "Rechercher un participant (nom ou username)"}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
             value={uploadParticipantQuery}
             onChange={(event) => setUploadParticipantQuery(event.target.value)}
           />
           <select
             required
-            disabled={!hasParticipants || !uploadParticipantOptions.length}
+            disabled={!hasParticipants || uploadForm.coachOnly || !uploadParticipantOptions.length}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
             value={uploadForm.participantId}
             onChange={(event) => setUploadForm((current) => ({ ...current, participantId: event.target.value }))}
           >
-            {hasParticipants ? (
+            {uploadForm.coachOnly ? (
+              <option value="">Aucun participant requis</option>
+            ) : hasParticipants ? (
               uploadParticipantOptions.length ? (
                 uploadParticipantOptions.map((participant) => (
                   <option key={participant.id} value={participant.id}>
@@ -376,14 +410,14 @@ export default function AdminManagementPanel({ participants, documents, recentPa
             required
             type="file"
             accept="application/pdf"
-            disabled={!hasParticipants}
+            disabled={uploadForm.coachOnly ? false : !hasParticipants}
             className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
             onChange={(event) => setUploadFile(event.target.files?.[0] ?? null)}
           />
         </div>
         <button
           type="submit"
-          disabled={!hasParticipants}
+          disabled={uploadForm.coachOnly ? false : !hasParticipants}
           className="mt-4 inline-flex rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
         >
           Uploader le PDF
@@ -490,6 +524,9 @@ export default function AdminManagementPanel({ participants, documents, recentPa
               >
                 <div>
                   <span className="font-semibold text-slate-900">{document.title}</span>
+                  <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500 ring-1 ring-slate-200">
+                    {document.audience === "coach" ? "Coach" : "Participant"}
+                  </span>
                   <br />
                   {document.participantFullName} • {document.updatedAt.toISOString().slice(0, 10)}
                 </div>
@@ -512,18 +549,38 @@ export default function AdminManagementPanel({ participants, documents, recentPa
                 {editingDocumentId === document.id ? (
                   <div className="mt-2 rounded-xl border border-slate-200 bg-white p-3 sm:col-span-2">
                     <div className="grid gap-3 md:grid-cols-2">
+                      <label className="flex items-center gap-3 rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700 md:col-span-2">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-slate-300"
+                          checked={editingDocumentForm.coachOnly}
+                          onChange={(event) =>
+                            setEditingDocumentForm((current) => ({
+                              ...current,
+                              coachOnly: event.target.checked,
+                              participantId: event.target.checked ? "" : current.participantId || (participants[0]?.id ?? ""),
+                            }))
+                          }
+                        />
+                        <span>Réserver ce document aux coachs</span>
+                      </label>
                       <select
                         className="rounded-xl border border-slate-300 px-3 py-2 text-sm"
+                        disabled={editingDocumentForm.coachOnly}
                         value={editingDocumentForm.participantId}
                         onChange={(event) =>
                           setEditingDocumentForm((current) => ({ ...current, participantId: event.target.value }))
                         }
                       >
-                        {participants.map((participant) => (
-                          <option key={participant.id} value={participant.id}>
-                            {participant.fullName}
-                          </option>
-                        ))}
+                        {editingDocumentForm.coachOnly ? (
+                          <option value="">Aucun participant requis</option>
+                        ) : (
+                          participants.map((participant) => (
+                            <option key={participant.id} value={participant.id}>
+                              {participant.fullName}
+                            </option>
+                          ))
+                        )}
                       </select>
                       <input
                         className="rounded-xl border border-slate-300 px-3 py-2 text-sm"

@@ -13,6 +13,11 @@ enum Role {
   admin
 }
 
+enum DocumentAudience {
+  participant
+  coach
+}
+
 model User {
   id              String     @id @default(cuid())
   username        String     @unique
@@ -39,12 +44,14 @@ model Document {
   fileName      String
   storageKey    String
   updatedAt     DateTime @default(now())
-  participantId String
+  audience      DocumentAudience @default(participant)
+  participantId String?
   coachId       String?
 
-  participant User  @relation("ParticipantDocuments", fields: [participantId], references: [id], onDelete: Cascade)
+  participant User? @relation("ParticipantDocuments", fields: [participantId], references: [id], onDelete: Cascade)
   coach       User? @relation("CoachAccess", fields: [coachId], references: [id], onDelete: SetNull)
 
   @@index([participantId])
+  @@index([audience])
   @@index([updatedAt])
 }

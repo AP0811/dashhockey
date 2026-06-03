@@ -36,6 +36,7 @@ export async function GET(request: Request, context: Params) {
       fileName: true,
       storageKey: true,
       participantId: true,
+      audience: true,
       participant: {
         select: {
           id: true,
@@ -51,8 +52,8 @@ export async function GET(request: Request, context: Params) {
 
   const canAccess =
     user.role === "admin" ||
-    (user.role === "participant" && user.id === document.participantId) ||
-    (user.role === "coach" && user.groupName && user.groupName === document.participant.groupName);
+    (user.role === "participant" && document.audience === "participant" && user.id === document.participantId) ||
+    (user.role === "coach" && (document.audience === "coach" || (user.groupName && document.participant && user.groupName === document.participant.groupName)));
 
   if (!canAccess) {
     return NextResponse.json({ error: "Accès refusé." }, { status: 403 });

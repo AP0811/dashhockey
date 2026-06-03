@@ -37,10 +37,33 @@ export default async function CoachDashboardPage({ searchParams }: CoachDashboar
 
   const documents = selectedParticipant
     ? await db.document.findMany({
-        where: { participantId: selectedParticipant.id },
+        where: { participantId: selectedParticipant.id, audience: "participant" },
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          fileName: true,
+          storageKey: true,
+          audience: true,
+          updatedAt: true,
+        },
         orderBy: { updatedAt: "desc" },
       })
     : [];
+
+  const coachDocuments = await db.document.findMany({
+    where: { audience: "coach" },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      fileName: true,
+      storageKey: true,
+      audience: true,
+      updatedAt: true,
+    },
+    orderBy: { updatedAt: "desc" },
+  });
 
   return (
     <main className="mx-auto w-full max-w-6xl px-6 py-8 sm:px-8 lg:px-10">
@@ -51,6 +74,29 @@ export default async function CoachDashboardPage({ searchParams }: CoachDashboar
             <h1 className="mt-4 text-3xl font-black tracking-tight text-slate-900">Espace Coach</h1>
           </div>
           <LogoutButton />
+        </div>
+
+        <div className="mt-6">
+          <div>
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">Documents des coachs</h2>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
+            <div className="mt-4">
+              <DocumentList
+                key={`coach-docs-${coachDocuments.length}`}
+                documents={coachDocuments}
+                emptyMessage="Aucun document réservé aux coachs pour le moment."
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <div className="flex items-center gap-4">
+            <h2 className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">Documents des athlètes</h2>
+            <div className="h-px flex-1 bg-slate-200" />
+          </div>
         </div>
 
         <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">

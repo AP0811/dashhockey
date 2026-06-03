@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
+import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth-server";
 import { db } from "@/lib/db";
 import { uploadPrivateFile } from "@/lib/storage";
+
+const schema = z.object({
+  participantId: z.string().optional(),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  audience: z.enum(["participant", "coach"]),
+});
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -11,28 +19,39 @@ export async function POST(request: Request) {
   }
 
   const formData = await request.formData();
-
-  const participantId = String(formData.get("participantId") ?? "").trim();
-  const title = String(formData.get("title") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
+  const result = schema.safeParse({
+    participantId: String(formData.get("participantId") ?? "").trim() || undefined,
+    title: String(formData.get("title") ?? "").trim(),
+    description: String(formData.get("description") ?? "").trim(),
+    audience: String(formData.get("audience") ?? "participant").trim(),
+  });
   const file = formData.get("file");
 
-  if (!participantId || !title || !(file instanceof File)) {
+  if (!result.success || !(file instanceof File)) {
     return NextResponse.json({ error: "Données de formulaire invalides." }, { status: 400 });
   }
 
-  const participant = await db.user.findFirst({
-    where: { id: participantId, role: "participant" },
-    select: { id: true },
-  });
+  const { participantId, title, description, audience } = result.data;
 
-  if (!participant) {
-    return NextResponse.json({ error: "Participant introuvable." }, { status: 404 });
+  if (audience === "participant" && !participantId) {
+    return NextResponse.json({ error: "Participant requis pour un document participant." }, { status: 400 });
+  }
+
+  if (participantId) {
+    const participant = await db.user.findFirst({
+      where: { id: participantId, role: "participant" },
+      select: { id: true },
+    });
+
+    if (!participant) {
+      return NextResponse.json({ error: "Participant introuvable." }, { status: 404 });
+    }
   }
 
   const buffer = new Uint8Array(await file.arrayBuffer());
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const storageKey = `documents/${participantId}/${crypto.randomUUID()}-${safeName}`;
+  const storageFolder = audience === "coach" ? "coach" : participantId;
+  const storageKey = `documents/${storageFolder}/${crypto.randomUUID()}-${safeName}`;
 
   try {
     await uploadPrivateFile({
@@ -48,10 +67,11 @@ export async function POST(request: Request) {
   const created = await db.document.create({
     data: {
       title,
-      description,
+      description: description || null,
       fileName: file.name,
       storageKey,
-      participantId,
+      participantId: audience === "coach" ? null : participantId,
+      audience,
     },
     select: {
       id: true,
@@ -59,6 +79,7 @@ export async function POST(request: Request) {
       fileName: true,
       updatedAt: true,
       participantId: true,
+      audience: true,
     },
   });
 

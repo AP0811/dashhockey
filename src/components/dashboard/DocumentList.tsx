@@ -10,6 +10,7 @@ type DashboardDocument = {
   description: string | null;
   fileName: string;
   storageKey: string;
+  audience: "participant" | "coach";
   updatedAt: Date;
 };
 
@@ -116,6 +117,9 @@ export default function DocumentList({ documents, emptyMessage }: DocumentListPr
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="font-semibold text-slate-900">{document.title}</h3>
+              <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                {document.audience === "coach" ? "Visible aux coachs" : "Visible au participant"}
+              </p>
               {document.description?.trim() ? <p className="mt-1 text-sm leading-6 text-slate-600">{document.description}</p> : null}
               <p className="mt-2 text-xs text-slate-500">Fichier: {document.fileName}</p>
               <div className="mt-3 flex flex-wrap gap-2">

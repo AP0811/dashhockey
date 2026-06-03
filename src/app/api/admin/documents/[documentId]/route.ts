@@ -5,9 +5,10 @@ import { db } from "@/lib/db";
 import { deletePrivateFile, uploadPrivateFile } from "@/lib/storage";
 
 const schema = z.object({
-  participantId: z.string().min(1),
+  participantId: z.string().optional(),
   title: z.string().min(1),
   description: z.string().optional(),
+  audience: z.enum(["participant", "coach"]),
 });
 
 type Params = {
@@ -28,6 +29,8 @@ export async function PATCH(request: Request, context: Params) {
       id: true,
       storageKey: true,
       fileName: true,
+      participantId: true,
+      audience: true,
     },
   });
 
@@ -37,9 +40,10 @@ export async function PATCH(request: Request, context: Params) {
 
   const formData = await request.formData();
   const result = schema.safeParse({
-    participantId: String(formData.get("participantId") ?? "").trim(),
+    participantId: String(formData.get("participantId") ?? "").trim() || undefined,
     title: String(formData.get("title") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
+    audience: String(formData.get("audience") ?? "participant").trim(),
   });
 
   if (!result.success) {
@@ -47,13 +51,19 @@ export async function PATCH(request: Request, context: Params) {
   }
 
   const payload = result.data;
-  const participant = await db.user.findFirst({
-    where: { id: payload.participantId, role: "participant" },
-    select: { id: true },
-  });
+  if (payload.audience === "participant" && !payload.participantId) {
+    return NextResponse.json({ error: "Participant requis pour un document participant." }, { status: 400 });
+  }
 
-  if (!participant) {
-    return NextResponse.json({ error: "Participant introuvable." }, { status: 404 });
+  if (payload.participantId) {
+    const participant = await db.user.findFirst({
+      where: { id: payload.participantId, role: "participant" },
+      select: { id: true },
+    });
+
+    if (!participant) {
+      return NextResponse.json({ error: "Participant introuvable." }, { status: 404 });
+    }
   }
 
   const file = formData.get("file");
@@ -73,7 +83,8 @@ export async function PATCH(request: Request, context: Params) {
     data: {
       title: payload.title,
       description: payload.description || null,
-      participantId: participant.id,
+      participantId: payload.audience === "coach" ? null : payload.participantId,
+      audience: payload.audience,
       fileName,
     },
     select: {
@@ -82,6 +93,7 @@ export async function PATCH(request: Request, context: Params) {
       fileName: true,
       updatedAt: true,
       participantId: true,
+      audience: true,
     },
   });
 

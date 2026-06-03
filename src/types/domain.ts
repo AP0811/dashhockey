@@ -1,5 +1,7 @@
 export type Role = "participant" | "coach" | "admin";
 
+export type DocumentAudience = "participant" | "coach";
+
 export type AppUser = {
   id: string;
   role: Role;
@@ -16,7 +18,8 @@ export type ParticipantProfile = {
 
 export type DocumentRecord = {
   id: string;
-  participantId: string;
+  participantId: string | null;
+  audience: DocumentAudience;
   title: string;
   description: string;
   fileName: string;

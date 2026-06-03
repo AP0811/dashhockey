@@ -26,6 +26,7 @@ export default async function AdminDashboardPage() {
         fileName: true,
         participantId: true,
         updatedAt: true,
+        audience: true,
         participant: {
           select: {
             fullName: true,
@@ -52,6 +53,7 @@ export default async function AdminDashboardPage() {
         fileName: true,
         participantId: true,
         updatedAt: true,
+        audience: true,
         participant: {
           select: {
             fullName: true,
@@ -99,7 +101,8 @@ export default async function AdminDashboardPage() {
             description: document.description,
             fileName: document.fileName,
             participantId: document.participantId,
-            participantFullName: document.participant.fullName,
+            audience: document.audience,
+            participantFullName: document.participant?.fullName ?? "Document coach",
           }))}
           recentParticipants={participantsWithCounts.map((participant) => ({
             id: participant.id,
@@ -111,7 +114,8 @@ export default async function AdminDashboardPage() {
             id: document.id,
             title: document.title,
             updatedAt: document.updatedAt,
-            participantFullName: document.participant.fullName,
+            audience: document.audience,
+            participantFullName: document.participant?.fullName ?? "Document coach",
           }))}
         />
       </section>
