@@ -6,9 +6,10 @@ import { db } from "@/lib/db";
 
 export default async function AdminDashboardPage() {
   const admin = await requireRole("admin");
-  const [participantCount, documentCount, allParticipants, allDocuments, participantsWithCounts, recentDocuments] = await Promise.all([
+  const [participantCount, documentCount, categoryCount, allParticipants, allCategories, allDocuments, participantsWithCounts] = await Promise.all([
     db.user.count({ where: { role: "participant" } }),
     db.document.count(),
+    db.documentCategory.count(),
     db.user.findMany({
       where: { role: "participant" },
       select: {
@@ -17,6 +18,18 @@ export default async function AdminDashboardPage() {
         username: true,
       },
       orderBy: { createdAt: "asc" },
+    }),
+    db.documentCategory.findMany({
+      select: {
+        id: true,
+        name: true,
+        _count: {
+          select: {
+            documents: true,
+          },
+        },
+      },
+      orderBy: { name: "asc" },
     }),
     db.document.findMany({
       select: {
@@ -27,6 +40,13 @@ export default async function AdminDashboardPage() {
         participantId: true,
         updatedAt: true,
         audience: true,
+        isVisibleToParticipant: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
         participant: {
           select: {
             fullName: true,
@@ -44,23 +64,6 @@ export default async function AdminDashboardPage() {
         _count: { select: { participantDocs: true } },
       },
       orderBy: { createdAt: "asc" },
-    }),
-    db.document.findMany({
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        fileName: true,
-        participantId: true,
-        updatedAt: true,
-        audience: true,
-        participant: {
-          select: {
-            fullName: true,
-          },
-        },
-      },
-      orderBy: { updatedAt: "desc" },
     }),
   ]);
 
@@ -87,9 +90,18 @@ export default async function AdminDashboardPage() {
             <p className="text-sm text-slate-500">Documents</p>
             <p className="mt-1 text-3xl font-black tracking-tight text-slate-900">{documentCount}</p>
           </article>
+          <article className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
+            <p className="text-sm text-slate-500">Catégories</p>
+            <p className="mt-1 text-3xl font-black tracking-tight text-slate-900">{categoryCount}</p>
+          </article>
         </div>
 
         <AdminManagementPanel
+          categories={allCategories.map((category) => ({
+            id: category.id,
+            name: category.name,
+            documentCount: category._count.documents,
+          }))}
           participants={allParticipants.map((participant) => ({
             id: participant.id,
             fullName: participant.fullName,
@@ -102,6 +114,9 @@ export default async function AdminDashboardPage() {
             fileName: document.fileName,
             participantId: document.participantId,
             audience: document.audience,
+            categoryId: document.category?.id ?? null,
+            categoryName: document.category?.name ?? null,
+            isVisibleToParticipant: document.isVisibleToParticipant,
             participantFullName: document.participant?.fullName ?? "Document coach",
           }))}
           recentParticipants={participantsWithCounts.map((participant) => ({
@@ -109,13 +124,6 @@ export default async function AdminDashboardPage() {
             fullName: participant.fullName,
             username: participant.username,
             documentCount: participant._count.participantDocs,
-          }))}
-          recentDocuments={recentDocuments.map((document) => ({
-            id: document.id,
-            title: document.title,
-            updatedAt: document.updatedAt,
-            audience: document.audience,
-            participantFullName: document.participant?.fullName ?? "Document coach",
           }))}
         />
       </section>

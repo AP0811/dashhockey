@@ -20,6 +20,9 @@ export type DocumentRecord = {
   id: string;
   participantId: string | null;
   audience: DocumentAudience;
+  isVisibleToParticipant: boolean;
+  categoryId: string | null;
+  categoryName: string | null;
   title: string;
   description: string;
   fileName: string;

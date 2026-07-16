@@ -1,55 +1,42 @@
 import RoleBadge from "@/components/ui/RoleBadge";
 import DocumentList from "@/components/dashboard/DocumentList";
 import LogoutButton from "@/components/dashboard/LogoutButton";
-import CoachParticipantSelector from "@/components/dashboard/CoachParticipantSelector";
 import { requireRole } from "@/lib/auth-server";
 import { db } from "@/lib/db";
 
-type CoachDashboardProps = {
-  searchParams: Promise<{ participantId?: string }>;
-};
-
-export default async function CoachDashboardPage({ searchParams }: CoachDashboardProps) {
+export default async function CoachDashboardPage() {
   const coach = await requireRole("coach");
-  const params = await searchParams;
-
-  const participants = await db.user.findMany({
+  const documents = await db.document.findMany({
     where: {
-      role: "participant",
-      groupName: coach.groupName ?? undefined,
-    },
-    orderBy: { fullName: "asc" },
-    select: {
-      id: true,
-      fullName: true,
-      participantCode: true,
-      groupName: true,
-      _count: {
-        select: {
-          participantDocs: true,
-        },
+      audience: "participant",
+      participant: {
+        role: "participant",
+        groupName: coach.groupName ?? undefined,
       },
     },
-  });
-
-  const selectedParticipant =
-    participants.find((participant) => participant.id === params.participantId) ?? participants[0] ?? null;
-
-  const documents = selectedParticipant
-    ? await db.document.findMany({
-        where: { participantId: selectedParticipant.id, audience: "participant" },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      fileName: true,
+      storageKey: true,
+      audience: true,
+      isVisibleToParticipant: true,
+      category: {
         select: {
           id: true,
-          title: true,
-          description: true,
-          fileName: true,
-          storageKey: true,
-          audience: true,
-          updatedAt: true,
+          name: true,
         },
-        orderBy: { updatedAt: "desc" },
-      })
-    : [];
+      },
+      participant: {
+        select: {
+          fullName: true,
+        },
+      },
+      updatedAt: true,
+    },
+    orderBy: { updatedAt: "desc" },
+  });
 
   const coachDocuments = await db.document.findMany({
     where: { audience: "coach" },
@@ -60,6 +47,18 @@ export default async function CoachDashboardPage({ searchParams }: CoachDashboar
       fileName: true,
       storageKey: true,
       audience: true,
+      isVisibleToParticipant: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      participant: {
+        select: {
+          fullName: true,
+        },
+      },
       updatedAt: true,
     },
     orderBy: { updatedAt: "desc" },
@@ -76,52 +75,38 @@ export default async function CoachDashboardPage({ searchParams }: CoachDashboar
           <LogoutButton />
         </div>
 
-        <div className="mt-6">
-          <div>
+        <details className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <summary className="cursor-pointer list-none">
             <div className="flex items-center gap-4">
               <h2 className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">Documents des coachs</h2>
               <div className="h-px flex-1 bg-slate-200" />
             </div>
-            <div className="mt-4">
-              <DocumentList
-                key={`coach-docs-${coachDocuments.length}`}
-                documents={coachDocuments}
-                emptyMessage="Aucun document réservé aux coachs pour le moment."
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6">
-          <div className="flex items-center gap-4">
-            <h2 className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">Documents des athlètes</h2>
-            <div className="h-px flex-1 bg-slate-200" />
-          </div>
-        </div>
-
-        <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-          <label className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-700" htmlFor="participantId">
-            Choisir un athlète
-          </label>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-            <CoachParticipantSelector
-              participants={participants.map((participant) => ({
-                id: participant.id,
-                fullName: participant.fullName,
-                documentCount: participant._count.participantDocs,
-              }))}
-              selectedParticipantId={selectedParticipant?.id ?? ""}
+          </summary>
+          <div className="mt-4">
+            <DocumentList
+              key={`coach-docs-${coachDocuments.length}`}
+              documents={coachDocuments}
+              emptyMessage="Aucun document réservé aux coachs pour le moment."
             />
           </div>
-        </div>
+        </details>
 
-        <div className="mt-6">
-          <DocumentList
-            key={selectedParticipant?.id ?? "no-participant"}
-            documents={documents}
-            emptyMessage="Aucun document pour l'athlète sélectionné."
-          />
-        </div>
+        <details className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <summary className="cursor-pointer list-none">
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-extrabold tracking-tight text-slate-900 sm:text-xl">Documents des athlètes</h2>
+              <div className="h-px flex-1 bg-slate-200" />
+            </div>
+          </summary>
+
+          <div className="mt-4">
+            <DocumentList
+              key={`athlete-docs-${documents.length}`}
+              documents={documents}
+              emptyMessage="Aucun document athlète disponible pour le moment."
+            />
+          </div>
+        </details>
       </section>
     </main>
   );

@@ -37,6 +37,7 @@ export async function GET(request: Request, context: Params) {
       storageKey: true,
       participantId: true,
       audience: true,
+      isVisibleToParticipant: true,
       participant: {
         select: {
           id: true,
@@ -52,7 +53,10 @@ export async function GET(request: Request, context: Params) {
 
   const canAccess =
     user.role === "admin" ||
-    (user.role === "participant" && document.audience === "participant" && user.id === document.participantId) ||
+    (user.role === "participant" &&
+      document.audience === "participant" &&
+      document.isVisibleToParticipant &&
+      user.id === document.participantId) ||
     (user.role === "coach" && (document.audience === "coach" || (user.groupName && document.participant && user.groupName === document.participant.groupName)));
 
   if (!canAccess) {

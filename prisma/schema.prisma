@@ -37,6 +37,16 @@ model User {
   @@index([groupName])
 }
 
+model DocumentCategory {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  documents Document[]
+
+  @@index([createdAt])
+}
+
 model Document {
   id            String   @id @default(cuid())
   title         String
@@ -45,12 +55,17 @@ model Document {
   storageKey    String
   updatedAt     DateTime @default(now())
   audience      DocumentAudience @default(participant)
+  isVisibleToParticipant Boolean @default(true)
+  categoryId    String?
   participantId String?
   coachId       String?
 
+  category    DocumentCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   participant User? @relation("ParticipantDocuments", fields: [participantId], references: [id], onDelete: Cascade)
   coach       User? @relation("CoachAccess", fields: [coachId], references: [id], onDelete: SetNull)
 
+  @@index([categoryId])
+  @@index([isVisibleToParticipant])
   @@index([participantId])
   @@index([audience])
   @@index([updatedAt])

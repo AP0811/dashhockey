@@ -6,9 +6,11 @@ import { deletePrivateFile, uploadPrivateFile } from "@/lib/storage";
 
 const schema = z.object({
   participantId: z.string().optional(),
+  categoryId: z.string().cuid().optional(),
   title: z.string().min(1),
   description: z.string().optional(),
   audience: z.enum(["participant", "coach"]),
+  isVisibleToParticipant: z.enum(["true", "false"]).optional(),
 });
 
 type Params = {
@@ -41,9 +43,11 @@ export async function PATCH(request: Request, context: Params) {
   const formData = await request.formData();
   const result = schema.safeParse({
     participantId: String(formData.get("participantId") ?? "").trim() || undefined,
+    categoryId: String(formData.get("categoryId") ?? "").trim() || undefined,
     title: String(formData.get("title") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
     audience: String(formData.get("audience") ?? "participant").trim(),
+    isVisibleToParticipant: String(formData.get("isVisibleToParticipant") ?? "true").trim(),
   });
 
   if (!result.success) {
@@ -51,6 +55,7 @@ export async function PATCH(request: Request, context: Params) {
   }
 
   const payload = result.data;
+  const isVisibleToParticipant = payload.isVisibleToParticipant !== "false";
   if (payload.audience === "participant" && !payload.participantId) {
     return NextResponse.json({ error: "Participant requis pour un document participant." }, { status: 400 });
   }
@@ -63,6 +68,17 @@ export async function PATCH(request: Request, context: Params) {
 
     if (!participant) {
       return NextResponse.json({ error: "Participant introuvable." }, { status: 404 });
+    }
+  }
+
+  if (payload.categoryId) {
+    const category = await db.documentCategory.findUnique({
+      where: { id: payload.categoryId },
+      select: { id: true },
+    });
+
+    if (!category) {
+      return NextResponse.json({ error: "Catégorie introuvable." }, { status: 404 });
     }
   }
 
@@ -85,6 +101,8 @@ export async function PATCH(request: Request, context: Params) {
       description: payload.description || null,
       participantId: payload.audience === "coach" ? null : payload.participantId,
       audience: payload.audience,
+      categoryId: payload.categoryId ?? null,
+      isVisibleToParticipant: payload.audience === "participant" ? isVisibleToParticipant : false,
       fileName,
     },
     select: {
@@ -94,6 +112,13 @@ export async function PATCH(request: Request, context: Params) {
       updatedAt: true,
       participantId: true,
       audience: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      isVisibleToParticipant: true,
     },
   });
 

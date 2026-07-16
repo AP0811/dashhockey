@@ -8,7 +8,23 @@ export default async function ParticipantDashboardPage() {
   const participant = await requireRole("participant");
 
   const documents = await db.document.findMany({
-    where: { participantId: participant.id },
+    where: { participantId: participant.id, audience: "participant", isVisibleToParticipant: true },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      fileName: true,
+      storageKey: true,
+      audience: true,
+      isVisibleToParticipant: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      updatedAt: true,
+    },
     orderBy: { updatedAt: "desc" },
   });
 

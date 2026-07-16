@@ -63,6 +63,7 @@ export async function GET(request: Request) {
         : {
             participantId,
             audience: "participant",
+            ...(user.role === "participant" ? { isVisibleToParticipant: true } : {}),
           },
     select: {
       id: true,
@@ -73,6 +74,13 @@ export async function GET(request: Request) {
       updatedAt: true,
       participantId: true,
       audience: true,
+      isVisibleToParticipant: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
     orderBy: { updatedAt: "desc" },
   });
